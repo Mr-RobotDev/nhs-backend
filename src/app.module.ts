@@ -21,6 +21,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { CardModule } from './card/card.module';
 import { ReportModule } from './report/report.module';
 import { AlertModule } from './alert/alert.module';
+import { OrganizationModule } from './organization/organization.module';
 import { SiteModule } from './site/site.module';
 import { BuildingModule } from './building/building.module';
 import { FloorModule } from './floor/floor.module';
@@ -56,6 +57,7 @@ import { RoomModule } from './room/room.module';
     CardModule,
     AlertModule,
     ReportModule,
+    OrganizationModule,
     SiteModule,
     BuildingModule,
     FloorModule,
