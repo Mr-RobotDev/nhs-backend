@@ -14,17 +14,20 @@ export class Floor extends Document {
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   code: string;
 
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   name: string;
 
   @Prop({
     type: String,
+    trim: true,
   })
   description?: string;
 
