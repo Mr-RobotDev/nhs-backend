@@ -44,12 +44,6 @@ export class Card extends Document {
   cols: number;
 
   @Prop({
-    type: String,
-    required: true,
-  })
-  field: string;
-
-  @Prop({
     type: [Types.ObjectId],
     ref: Device.name,
     required: true,
