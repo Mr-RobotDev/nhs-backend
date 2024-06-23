@@ -20,6 +20,7 @@ export class Report extends Document {
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   name: string;
 
