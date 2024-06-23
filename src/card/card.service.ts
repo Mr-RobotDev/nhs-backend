@@ -41,7 +41,7 @@ export class CardService {
     return card;
   }
 
-  getCards(dashboard: string) {
+  async getCards(dashboard: string) {
     return this.cardModel.find(
       {
         dashboard,
@@ -50,7 +50,7 @@ export class CardService {
       {
         populate: {
           path: 'devices',
-          select: 'name type',
+          select: 'name state',
         },
       },
     );
@@ -66,7 +66,7 @@ export class CardService {
       {
         populate: {
           path: 'devices',
-          select: 'name',
+          select: 'name state',
         },
       },
     );
@@ -92,7 +92,7 @@ export class CardService {
         projection: '-createdAt -dashboard',
         populate: {
           path: 'devices',
-          select: 'name',
+          select: 'name state',
         },
       },
     );
@@ -110,10 +110,6 @@ export class CardService {
       },
       {
         projection: '-createdAt -dashboard',
-        populate: {
-          path: 'devices',
-          select: 'name',
-        },
       },
     );
     if (!card) {
