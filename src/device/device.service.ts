@@ -40,9 +40,7 @@ export class DeviceService {
   private async handleUpdateChange(change: any) {
     const device = change.documentKey._id;
     const updatedFields = change.updateDescription.updatedFields;
-
     const alerts = await this.alertService.filterAlerts(device.toString());
-
     const currentDay = format(new Date(), 'EEEE').toLowerCase() as WeekDay;
     await this.processAlerts(alerts, updatedFields, currentDay);
   }
@@ -53,13 +51,11 @@ export class DeviceService {
     currentDay: WeekDay,
   ) {
     const updatedValue = updatedFields.state;
-
     const alertPromises = alerts.map((alert) => {
       if (this.alertService.shouldSendAlert(alert, currentDay, updatedValue)) {
         return this.sendAlertEmail(alert, updatedValue);
       }
     });
-
     await Promise.all(alertPromises);
   }
 
@@ -77,8 +73,8 @@ export class DeviceService {
     }
   }
 
-  async getDeviceByRoom(room: string): Promise<Device> {
-    return this.deviceModel.findOne({ room });
+  async getDevicesByRoom(room: string): Promise<Device[]> {
+    return this.deviceModel.find({ room });
   }
 
   async getDeviceById(device: string): Promise<Device> {
