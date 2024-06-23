@@ -5,6 +5,7 @@ import { CreateBuildingDto } from './dto/create-building.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
+import { Result } from 'src/common/interfaces/result.interface';
 
 @Injectable()
 export class BuildingService {
@@ -13,7 +14,10 @@ export class BuildingService {
     private readonly buildingModel: PaginatedModel<Building>,
   ) {}
 
-  async createSite(site: string, createBuildingDto: CreateBuildingDto) {
+  async createSite(
+    site: string,
+    createBuildingDto: CreateBuildingDto,
+  ): Promise<Building> {
     const building = await this.buildingModel.create({
       ...createBuildingDto,
       site,
@@ -21,18 +25,24 @@ export class BuildingService {
     return building;
   }
 
-  async getSites(site: string, paginationDto?: PaginationQueryDto) {
+  async getSites(
+    site: string,
+    paginationDto?: PaginationQueryDto,
+  ): Promise<Result<Building>> {
     const { page, limit } = paginationDto;
-    return this.buildingModel.paginate({ site }, { page, limit });
+    return this.buildingModel.paginate(
+      { site },
+      { page, limit, projection: '-site -createdAt' },
+    );
   }
 
-  async getSite(site: string, id: string) {
+  async getSite(site: string, id: string): Promise<Building> {
     const building = await this.buildingModel.findOne(
       {
         _id: id,
         site,
       },
-      '-site',
+      '-site -createdAt',
     );
     if (!building) {
       throw new NotFoundException(`Building #${id} not found`);
@@ -44,14 +54,14 @@ export class BuildingService {
     site: string,
     id: string,
     updateBuildingDto: UpdateBuildingDto,
-  ) {
+  ): Promise<Building> {
     const building = await this.buildingModel.findOneAndUpdate(
       {
         _id: id,
         site,
       },
       updateBuildingDto,
-      { new: true, projection: '-site' },
+      { new: true, projection: '-site -createdAt' },
     );
     if (!building) {
       throw new NotFoundException(`Building #${id} not found`);
@@ -59,14 +69,11 @@ export class BuildingService {
     return building;
   }
 
-  async removeSite(site: string, id: string) {
-    const building = await this.buildingModel.findOneAndDelete(
-      {
-        _id: id,
-        site,
-      },
-      { projection: '-site' },
-    );
+  async removeSite(site: string, id: string): Promise<Building> {
+    const building = await this.buildingModel.findOneAndDelete({
+      _id: id,
+      site,
+    });
     if (!building) {
       throw new NotFoundException(`Building #${id} not found`);
     }
