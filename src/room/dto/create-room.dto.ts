@@ -32,6 +32,10 @@ export class CreateRoomDto {
   department: string;
 
   @IsString()
+  @IsOptional()
+  subDepartment: string;
+
+  @IsString()
   @IsNotEmpty()
   division: string;
 

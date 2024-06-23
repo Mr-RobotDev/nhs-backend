@@ -25,20 +25,25 @@ export class RoomService {
     const rooms = await this.roomModel.find();
 
     const updatePromises = rooms.map(async (room) => {
-      const device = await this.deviceService.getDeviceByRoom(room.id);
-      if (!device) return;
+      const devices = await this.deviceService.getDevicesByRoom(room.id);
 
       const query: GetEventsQueryDto = {
         from: new Date(new Date().setHours(0, 0, 0, 0)),
         to: new Date(),
       };
 
-      const occupancy = await this.eventService.calculateOccupancy(
-        device.id,
-        query,
-        room.hoursPerDay,
-      );
+      let totalOccupancy = 0;
 
+      for (const device of devices) {
+        const occupancy = await this.eventService.calculateOccupancy(
+          device.id,
+          query,
+          room.hoursPerDay,
+        );
+        totalOccupancy += occupancy;
+      }
+
+      const occupancy = totalOccupancy / devices.length;
       await this.roomModel.updateOne({ _id: room.id }, { occupancy });
     });
 
@@ -63,15 +68,21 @@ export class RoomService {
       {
         page,
         limit,
-        projection: '-floor',
+        projection: '-floor -createdAt',
       },
     );
   }
 
-  async roomStats(): Promise<{ red: number; yellow: number; green: number }> {
+  async roomStats(): Promise<{
+    totalRooms: number;
+    red: number;
+    yellow: number;
+    green: number;
+  }> {
     const [stats] = await this.roomModel.aggregate([
       {
         $facet: {
+          total: [{ $count: 'count' }],
           red: [{ $match: { occupancy: { $lte: 60 } } }, { $count: 'count' }],
           yellow: [
             { $match: { occupancy: { $gt: 60, $lte: 80 } } },
@@ -82,6 +93,7 @@ export class RoomService {
       },
       {
         $project: {
+          totalRooms: { $arrayElemAt: ['$total.count', 0] },
           red: { $arrayElemAt: ['$red.count', 0] },
           yellow: { $arrayElemAt: ['$yellow.count', 0] },
           green: { $arrayElemAt: ['$green.count', 0] },
@@ -98,7 +110,7 @@ export class RoomService {
         _id: id,
         floor,
       },
-      '-floor',
+      '-floor -createdAt',
     );
     if (!room) {
       throw new NotFoundException('Room not found');
@@ -117,7 +129,7 @@ export class RoomService {
         floor,
       },
       updateRoom,
-      { new: true, projection: '-floor' },
+      { new: true, projection: '-floor -createdAt' },
     );
     if (!room) {
       throw new NotFoundException('Room not found');
@@ -131,7 +143,7 @@ export class RoomService {
         _id: id,
         floor,
       },
-      { projection: '-floor' },
+      { projection: '-floor -createdAt' },
     );
     if (!room) {
       throw new NotFoundException('Room not found');

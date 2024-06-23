@@ -14,23 +14,27 @@ export class Room extends Document {
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   code: string;
 
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   name: string;
 
   @Prop({
     type: String,
+    trim: true,
   })
   description?: string;
 
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   function: string;
 
@@ -43,30 +47,41 @@ export class Room extends Document {
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   department: string;
 
   @Prop({
     type: String,
+    trim: true,
+  })
+  subDepartment?: string;
+
+  @Prop({
+    type: String,
     required: true,
+    trim: true,
   })
   division: string;
 
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   cluster: string;
 
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   clusterDescription: string;
 
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   operationHours: string;
 
