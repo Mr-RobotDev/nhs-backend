@@ -35,7 +35,7 @@ export class FloorService {
       {
         page,
         limit,
-        projection: '-building',
+        projection: '-building -createdAt',
       },
     );
   }
@@ -46,7 +46,7 @@ export class FloorService {
         _id: id,
         building,
       },
-      '-building',
+      '-building -createdAt',
     );
     if (!floor) {
       throw new NotFoundException('Floor not found');
@@ -65,7 +65,7 @@ export class FloorService {
         building,
       },
       updateFloorDto,
-      { new: true, projection: '-building' },
+      { new: true, projection: '-building -createdAt' },
     );
     if (!floor) {
       throw new NotFoundException('Floor not found');
@@ -79,7 +79,7 @@ export class FloorService {
         _id: id,
         building,
       },
-      { projection: '-building' },
+      { projection: '-building -createdAt' },
     );
     if (!floor) {
       throw new NotFoundException('Floor not found');
