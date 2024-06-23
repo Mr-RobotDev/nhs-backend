@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { Organization } from '../../organization/schema/organization.schema';
 import { Site } from '../../site/schema/site.schema';
 import { Building } from '../../building/schema/building.schema';
 import { Floor } from '../../floor/schema/floor.schema';
@@ -27,14 +28,15 @@ export class Device extends Document {
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   name: string;
 
   @Prop({
     type: String,
-    required: true,
+    trim: true,
   })
-  description: string;
+  description?: string;
 
   @Prop({
     type: String,
@@ -69,6 +71,14 @@ export class Device extends Document {
 
   @Prop({
     type: String,
+    ref: Organization.name,
+    required: true,
+    index: true,
+  })
+  organization: Organization;
+
+  @Prop({
+    type: String,
     ref: Site.name,
     required: true,
     index: true,
@@ -95,7 +105,6 @@ export class Device extends Document {
     type: String,
     ref: Room.name,
     required: true,
-    unique: true,
     index: true,
   })
   room: Room;
