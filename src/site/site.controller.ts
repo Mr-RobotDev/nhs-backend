@@ -17,7 +17,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 
 @Controller({
-  path: 'sites',
+  path: 'organizations/:organization/sites',
   version: '1',
 })
 export class SiteController {
@@ -25,32 +25,45 @@ export class SiteController {
 
   @Roles(Role.ADMIN)
   @Post()
-  createSite(@Body() createSiteDto: CreateSiteDto) {
-    return this.siteService.createSite(createSiteDto);
+  createSite(
+    @Param('organization', IsObjectIdPipe) organization: string,
+    @Body() createSiteDto: CreateSiteDto,
+  ) {
+    return this.siteService.createSite(organization, createSiteDto);
   }
 
   @Get()
-  getSites(@Query() paginationDto?: PaginationQueryDto) {
-    return this.siteService.getSites(paginationDto);
+  getSites(
+    @Param('organization', IsObjectIdPipe) organization: string,
+    @Query() paginationDto?: PaginationQueryDto,
+  ) {
+    return this.siteService.getSites(organization, paginationDto);
   }
 
   @Get(':site')
-  getSite(@Param('site', IsObjectIdPipe) site: string) {
-    return this.siteService.getSite(site);
+  getSite(
+    @Param('organization', IsObjectIdPipe) organization: string,
+    @Param('site', IsObjectIdPipe) site: string,
+  ) {
+    return this.siteService.getSite(organization, site);
   }
 
   @Roles(Role.ADMIN)
   @Patch(':site')
   updateSite(
+    @Param('organization', IsObjectIdPipe) organization: string,
     @Param('site', IsObjectIdPipe) site: string,
     @Body() updateSiteDto: UpdateSiteDto,
   ) {
-    return this.siteService.updateSite(site, updateSiteDto);
+    return this.siteService.updateSite(organization, site, updateSiteDto);
   }
 
   @Roles(Role.ADMIN)
   @Delete(':site')
-  removeSite(@Param('site', IsObjectIdPipe) site: string) {
-    return this.siteService.removeSite(site);
+  removeSite(
+    @Param('organization', IsObjectIdPipe) organization: string,
+    @Param('site', IsObjectIdPipe) site: string,
+  ) {
+    return this.siteService.removeSite(organization, site);
   }
 }
