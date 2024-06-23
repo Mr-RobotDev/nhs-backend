@@ -12,19 +12,22 @@ import { Site } from '../../site/schema/site.schema';
 })
 export class Building extends Document {
   @Prop({
-    type: Number,
+    type: String,
     required: true,
+    trim: true,
   })
-  code: number;
+  code: string;
 
   @Prop({
     type: String,
     required: true,
+    trim: true,
   })
   name: string;
 
   @Prop({
     type: String,
+    trim: true,
   })
   description?: string;
 
