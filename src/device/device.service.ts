@@ -98,7 +98,8 @@ export class DeviceService {
     user: string,
     query: GetDevicesQueryDto,
   ): Promise<Result<Device>> {
-    const { search, page, limit } = query;
+    const { search, organization, site, building, floor, room, page, limit } =
+      query;
     await this.logService.createLog(user, {
       action: Action.VIEWED,
       page: Page.DEVICES,
@@ -106,18 +107,20 @@ export class DeviceService {
 
     return this.deviceModel.paginate(
       {
+        ...(organization && { organization: { $in: organization } }),
+        ...(site && { site: { $in: site } }),
+        ...(building && { building: { $in: building } }),
+        ...(floor && { floor: { $in: floor } }),
+        ...(room && { room: { $in: room } }),
         ...(search && {
-          $or: [
-            { oem: { $regex: search, $options: 'i' } },
-            { name: { $regex: search, $options: 'i' } },
-          ],
+          $or: [{ oem: search }, { name: { $regex: search, $options: 'i' } }],
         }),
       },
       {
         page,
         limit,
         sortBy: '-updatedAt',
-        projection: '-site -building -floor -room -createdAt',
+        projection: '-organization -site -building -floor -room -createdAt',
       },
     );
   }
@@ -125,7 +128,7 @@ export class DeviceService {
   async device(user: string, id: string): Promise<Device> {
     const device = await this.deviceModel.findById(
       id,
-      '-site -building -floor -room -createdAt',
+      '-organization -site -building -floor -room -createdAt',
     );
     if (!device) {
       throw new NotFoundException(`Device #${id} not found`);
@@ -187,7 +190,7 @@ export class DeviceService {
       updateDeviceDto,
       {
         new: true,
-        projection: '-site -building -floor -room -createdAt',
+        projection: '-organization -site -building -floor -room -createdAt',
       },
     );
     if (!device) {
@@ -203,7 +206,7 @@ export class DeviceService {
 
   async removeDevice(user: string, id: string): Promise<Device> {
     const device = await this.deviceModel.findByIdAndDelete(id, {
-      projection: '-site -building -floor -room -createdAt',
+      projection: '-organization -site -building -floor -room -createdAt',
     });
     if (!device) {
       throw new NotFoundException(`Device #${id} not found`);
