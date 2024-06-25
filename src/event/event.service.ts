@@ -36,7 +36,7 @@ export class EventService {
   ) {
     const intervals = await this.processEvents(device, query);
 
-    let motionMinutes = 0;
+    let motionMinutes: number = 0;
 
     for (const interval of intervals) {
       if (interval.state === DeviceState.MOTION_DETECTED) {
