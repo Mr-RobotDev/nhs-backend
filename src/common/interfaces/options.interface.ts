@@ -1,7 +1,8 @@
-interface PopulateOptions {
+interface PopulateOption {
   path: string;
   select?: string;
-  match?: object;
+  match?: any;
+  populate?: PopulateOption;
 }
 
 export interface Options {
@@ -9,5 +10,5 @@ export interface Options {
   limit?: number;
   sortBy?: string;
   projection?: string;
-  populate?: PopulateOptions[];
+  populate?: PopulateOption[];
 }
