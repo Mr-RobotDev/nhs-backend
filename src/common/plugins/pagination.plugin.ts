@@ -1,10 +1,10 @@
-import { Schema, PipelineStage } from 'mongoose';
+import { Schema, PipelineStage, FilterQuery } from 'mongoose';
 import { Options } from '../interfaces/options.interface';
 import { Result } from '../interfaces/result.interface';
 
 export const paginate = (schema: Schema): void => {
   schema.statics.paginate = async function <T>(
-    filter: object,
+    filter: FilterQuery<T>,
     options?: Options,
   ): Promise<Result<T>> {
     let sort = '';
@@ -19,14 +19,8 @@ export const paginate = (schema: Schema): void => {
       sort = '-createdAt';
     }
 
-    const limit =
-      options.limit && parseInt(`${options.limit}`, 10) > 0
-        ? parseInt(`${options.limit}`, 10)
-        : 10;
-    const page =
-      options.page && parseInt(`${options.page}`, 10) > 0
-        ? parseInt(`${options.page}`, 10)
-        : 1;
+    const limit = options.limit && options.limit > 0 ? options.limit : 10;
+    const page = options.page && options.page > 0 ? options.page : 1;
     const skip = (page - 1) * limit;
 
     let query = this.find(filter)
@@ -66,8 +60,8 @@ export const paginatedAggregation = (schema: Schema): void => {
     pipeline: PipelineStage[],
     options?: Options,
   ): Promise<Result<T>> {
-    const page = Math.max(parseInt(`${options.page}`, 10) || 1, 1);
-    const limit = Math.max(parseInt(`${options.limit}`, 10) || 10, 1);
+    const limit = options.limit && options.limit > 0 ? options.limit : 10;
+    const page = options.page && options.page > 0 ? options.page : 1;
     const skip = (page - 1) * limit;
 
     const countPipeline = [...pipeline, { $count: 'totalResults' }];

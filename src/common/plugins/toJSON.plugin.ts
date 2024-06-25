@@ -1,12 +1,16 @@
 import { Schema } from 'mongoose';
 
-function toJSON(schema: Schema) {
+function toJSON(schema: Schema, removeUpdatedAt = true) {
   schema.set('toJSON', {
     transform: (_doc, ret) => {
       ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
-      delete ret.updatedAt;
+
+      if (removeUpdatedAt) {
+        delete ret.updatedAt;
+      }
+
       return ret;
     },
   });
@@ -16,7 +20,11 @@ function toJSON(schema: Schema) {
       ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
-      delete ret.updatedAt;
+
+      if (removeUpdatedAt) {
+        delete ret.updatedAt;
+      }
+
       return ret;
     },
   });
