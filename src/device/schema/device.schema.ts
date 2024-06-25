@@ -19,9 +19,9 @@ import {
 export class Device extends Document {
   @Prop({
     type: String,
+    required: true,
     unique: true,
     index: true,
-    required: true,
   })
   oem?: string;
 
@@ -114,6 +114,6 @@ export const DeviceSchema = SchemaFactory.createForClass(Device);
 
 DeviceSchema.index({ oem: 1, name: 1 });
 
-DeviceSchema.plugin(toJSON);
+DeviceSchema.plugin(toJSON, false);
 DeviceSchema.plugin(paginate);
 DeviceSchema.plugin(paginatedAggregation);
