@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Building } from './schema/building.schema';
 import { CreateBuildingDto } from './dto/create-building.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { GetBuildingsQueryDto } from './dto/get-buildings.dto';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
 import { Result } from 'src/common/interfaces/result.interface';
 
@@ -25,29 +25,19 @@ export class BuildingService {
     return building;
   }
 
-  async getSites(
-    site: string,
-    paginationDto?: PaginationQueryDto,
-  ): Promise<Result<Building>> {
-    const { page, limit } = paginationDto;
+  async getSites(query?: GetBuildingsQueryDto): Promise<Result<Building>> {
+    const { page, limit, search, site } = query;
     return this.buildingModel.paginate(
-      { site },
-      { page, limit, projection: '-site -createdAt' },
-    );
-  }
-
-  async getSite(site: string, id: string): Promise<Building> {
-    const building = await this.buildingModel.findOne(
       {
-        _id: id,
-        site,
+        ...(search && { name: { $regex: search, $options: 'i' } }),
+        ...(site && { site: { $in: site } }),
       },
-      '-site -createdAt',
+      {
+        page,
+        limit,
+        projection: '-site -createdAt',
+      },
     );
-    if (!building) {
-      throw new NotFoundException(`Building #${id} not found`);
-    }
-    return building;
   }
 
   async updateSite(

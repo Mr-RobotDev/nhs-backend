@@ -11,20 +11,19 @@ import {
 import { SiteService } from './site.service';
 import { CreateSiteDto } from './dto/create-site.dto';
 import { UpdateSiteDto } from './dto/update-site.dto';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { GetSitesQueryDto } from './dto/get-sites.dto';
 import { IsObjectIdPipe } from '../common/pipes/objectid.pipe';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 
 @Controller({
-  path: 'organizations/:organization/sites',
   version: '1',
 })
 export class SiteController {
   constructor(private readonly siteService: SiteService) {}
 
   @Roles(Role.ADMIN)
-  @Post()
+  @Post('organizations/:organization/sites')
   createSite(
     @Param('organization', IsObjectIdPipe) organization: string,
     @Body() createSiteDto: CreateSiteDto,
@@ -33,23 +32,12 @@ export class SiteController {
   }
 
   @Get()
-  getSites(
-    @Param('organization', IsObjectIdPipe) organization: string,
-    @Query() paginationDto?: PaginationQueryDto,
-  ) {
-    return this.siteService.getSites(organization, paginationDto);
-  }
-
-  @Get(':site')
-  getSite(
-    @Param('organization', IsObjectIdPipe) organization: string,
-    @Param('site', IsObjectIdPipe) site: string,
-  ) {
-    return this.siteService.getSite(organization, site);
+  getSites(@Query() query?: GetSitesQueryDto) {
+    return this.siteService.getSites(query);
   }
 
   @Roles(Role.ADMIN)
-  @Patch(':site')
+  @Patch('organizations/:organization/sites/:site')
   updateSite(
     @Param('organization', IsObjectIdPipe) organization: string,
     @Param('site', IsObjectIdPipe) site: string,
@@ -59,7 +47,7 @@ export class SiteController {
   }
 
   @Roles(Role.ADMIN)
-  @Delete(':site')
+  @Delete('organizations/:organization/sites/:site')
   removeSite(
     @Param('organization', IsObjectIdPipe) organization: string,
     @Param('site', IsObjectIdPipe) site: string,

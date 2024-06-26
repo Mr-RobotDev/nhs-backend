@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
-import { UpdateQuery } from 'mongoose';
 import { Room } from './schema/room.schema';
 import { DeviceService } from '../device/device.service';
 import { EventService } from '../event/event.service';
 import { CreateRoomDto } from './dto/create-room.dto';
+import { UpdateRoomDto } from './dto/update-room.dto';
+import { GetRoomsQueryDto } from './dto/get-rooms.dto';
 import { GetEventsQueryDto } from '../event/dto/get-events.dto';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
 import { Result } from '../common/interfaces/result.interface';
 
@@ -58,13 +58,13 @@ export class RoomService {
     return room;
   }
 
-  async getRooms(
-    floor: string,
-    paginationDto?: PaginationQueryDto,
-  ): Promise<Result<Room>> {
-    const { page, limit } = paginationDto;
+  async getRooms(query?: GetRoomsQueryDto): Promise<Result<Room>> {
+    const { page, limit, search, floor } = query;
     return this.roomModel.paginate(
-      { floor },
+      {
+        ...(search && { name: { $regex: search, $options: 'i' } }),
+        ...(floor && { floor: { $in: floor } }),
+      },
       {
         page,
         limit,
@@ -104,31 +104,17 @@ export class RoomService {
     return stats;
   }
 
-  async getRoom(floor: string, id: string): Promise<Room> {
-    const room = await this.roomModel.findOne(
-      {
-        _id: id,
-        floor,
-      },
-      '-floor -createdAt',
-    );
-    if (!room) {
-      throw new NotFoundException('Room not found');
-    }
-    return room;
-  }
-
   async updateRoom(
     floor: string,
     id: string,
-    updateRoom: UpdateQuery<Room>,
+    updateRoomDto: UpdateRoomDto,
   ): Promise<Room> {
     const room = await this.roomModel.findOneAndUpdate(
       {
         _id: id,
         floor,
       },
-      updateRoom,
+      updateRoomDto,
       { new: true, projection: '-floor -createdAt' },
     );
     if (!room) {

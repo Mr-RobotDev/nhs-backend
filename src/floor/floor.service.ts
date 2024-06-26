@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Floor } from './schema/floor.schema';
 import { CreateFloorDto } from './dto/create-floor.dto';
 import { UpdateFloorDto } from './dto/update-floor.dto';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { GetFloorsQueryDto } from './dto/get-floors.dto';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
 import { Result } from '../common/interfaces/result.interface';
 
@@ -25,33 +25,19 @@ export class FloorService {
     return floor;
   }
 
-  async getFloors(
-    building: string,
-    paginationDto?: PaginationQueryDto,
-  ): Promise<Result<Floor>> {
-    const { page, limit } = paginationDto;
+  async getFloors(query?: GetFloorsQueryDto): Promise<Result<Floor>> {
+    const { page, limit, search, building } = query;
     return this.floorModel.paginate(
-      { building },
+      {
+        ...(search && { name: { $regex: search, $options: 'i' } }),
+        ...(building && { building: { $in: building } }),
+      },
       {
         page,
         limit,
         projection: '-building -createdAt',
       },
     );
-  }
-
-  async getFloor(building: string, id: string): Promise<Floor> {
-    const floor = await this.floorModel.findOne(
-      {
-        _id: id,
-        building,
-      },
-      '-building -createdAt',
-    );
-    if (!floor) {
-      throw new NotFoundException('Floor not found');
-    }
-    return floor;
   }
 
   async updateFloor(

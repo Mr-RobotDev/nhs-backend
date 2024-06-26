@@ -11,8 +11,10 @@ import {
 import { RoomService } from './room.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { GetRoomsQueryDto } from './dto/get-rooms.dto';
 import { IsObjectIdPipe } from '../common/pipes/objectid.pipe';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '../common/enums/role.enum';
 
 @Controller({
   version: '1',
@@ -20,6 +22,7 @@ import { IsObjectIdPipe } from '../common/pipes/objectid.pipe';
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
+  @Roles(Role.ADMIN)
   @Post('floors/:floor/rooms')
   createRoom(
     @Param('floor', IsObjectIdPipe) floor: string,
@@ -28,12 +31,9 @@ export class RoomController {
     return this.roomService.createRoom(floor, createRoomDto);
   }
 
-  @Get('floors/:floor/rooms')
-  getRooms(
-    @Param('floor', IsObjectIdPipe) floor: string,
-    @Query() paginationDto?: PaginationQueryDto,
-  ) {
-    return this.roomService.getRooms(floor, paginationDto);
+  @Get('rooms')
+  getRooms(@Query() query?: GetRoomsQueryDto) {
+    return this.roomService.getRooms(query);
   }
 
   @Get('rooms/stats')
@@ -41,14 +41,7 @@ export class RoomController {
     return this.roomService.roomStats();
   }
 
-  @Get('floors/:floor/rooms/:room')
-  getRoom(
-    @Param('floor', IsObjectIdPipe) floor: string,
-    @Param('room', IsObjectIdPipe) room: string,
-  ) {
-    return this.roomService.getRoom(floor, room);
-  }
-
+  @Roles(Role.ADMIN)
   @Patch('floors/:floor/rooms/:room')
   updateRoom(
     @Param('floor', IsObjectIdPipe) floor: string,
@@ -58,6 +51,7 @@ export class RoomController {
     return this.roomService.updateRoom(floor, room, updateRoomDto);
   }
 
+  @Roles(Role.ADMIN)
   @Delete('floors/:floor/rooms/:room')
   removeRoom(
     @Param('floor', IsObjectIdPipe) floor: string,

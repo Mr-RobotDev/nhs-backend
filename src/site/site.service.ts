@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Site } from './schema/site.schema';
 import { CreateSiteDto } from './dto/create-site.dto';
 import { UpdateSiteDto } from './dto/update-site.dto';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { GetSitesQueryDto } from './dto/get-sites.dto';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
 import { Result } from '../common/interfaces/result.interface';
 
@@ -25,14 +25,12 @@ export class SiteService {
     return site;
   }
 
-  async getSites(
-    organization: string,
-    paginationDto: PaginationQueryDto,
-  ): Promise<Result<Site>> {
-    const { page, limit } = paginationDto;
+  async getSites(query?: GetSitesQueryDto): Promise<Result<Site>> {
+    const { page, limit, search, organization } = query;
     return this.siteModel.paginate(
       {
-        organization,
+        ...(search && { name: { $regex: search, $options: 'i' } }),
+        ...(organization && { organization: { $in: organization } }),
       },
       {
         page,
@@ -40,19 +38,6 @@ export class SiteService {
         projection: '-organization -createdAt',
       },
     );
-  }
-
-  async getSite(organization: string, id: string): Promise<Site> {
-    const site = await this.siteModel
-      .findOne({
-        _id: id,
-        organization,
-      })
-      .select('-organization -createdAt');
-    if (!site) {
-      throw new NotFoundException(`Site #${id} not found`);
-    }
-    return site;
   }
 
   async updateSite(

@@ -96,7 +96,7 @@ export class DeviceService {
 
   async devices(
     user: string,
-    query: GetDevicesQueryDto,
+    query?: GetDevicesQueryDto,
   ): Promise<Result<Device>> {
     const { search, organization, site, building, floor, room, page, limit } =
       query;

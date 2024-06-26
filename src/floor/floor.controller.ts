@@ -11,17 +11,19 @@ import {
 import { FloorService } from './floor.service';
 import { CreateFloorDto } from './dto/create-floor.dto';
 import { UpdateFloorDto } from './dto/update-floor.dto';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { GetFloorsQueryDto } from './dto/get-floors.dto';
 import { IsObjectIdPipe } from '../common/pipes/objectid.pipe';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '../common/enums/role.enum';
 
 @Controller({
-  path: 'buildings/:building/floors',
   version: '1',
 })
 export class FloorController {
   constructor(private readonly floorService: FloorService) {}
 
-  @Post()
+  @Roles(Role.ADMIN)
+  @Post('buildings/:building/floors')
   createFloor(
     @Param('building', IsObjectIdPipe) building: string,
     @Body() createFloorDto: CreateFloorDto,
@@ -30,22 +32,12 @@ export class FloorController {
   }
 
   @Get()
-  getFloors(
-    @Param('building', IsObjectIdPipe) building: string,
-    @Query() paginationDto?: PaginationQueryDto,
-  ) {
-    return this.floorService.getFloors(building, paginationDto);
+  getFloors(@Query() query?: GetFloorsQueryDto) {
+    return this.floorService.getFloors(query);
   }
 
-  @Get(':floor')
-  getFloor(
-    @Param('building', IsObjectIdPipe) building: string,
-    @Param('floor', IsObjectIdPipe) floor: string,
-  ) {
-    return this.floorService.getFloor(building, floor);
-  }
-
-  @Patch(':floor')
+  @Roles(Role.ADMIN)
+  @Patch('buildings/:building/floors/:floor')
   updateFloor(
     @Param('building', IsObjectIdPipe) building: string,
     @Param('floor', IsObjectIdPipe) floor: string,
@@ -54,7 +46,8 @@ export class FloorController {
     return this.floorService.updateFloor(building, floor, updateFloorDto);
   }
 
-  @Delete(':floor')
+  @Roles(Role.ADMIN)
+  @Delete('buildings/:building/floors/:floor')
   removeFloor(
     @Param('building', IsObjectIdPipe) building: string,
     @Param('floor', IsObjectIdPipe) floor: string,
