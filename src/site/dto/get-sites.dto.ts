@@ -1,4 +1,4 @@
-import { IsArray, IsMongoId, IsOptional, IsString } from 'class-validator';
+import { IsMongoId, IsOptional, IsString } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 export class GetSitesQueryDto extends PaginationQueryDto {
@@ -7,7 +7,6 @@ export class GetSitesQueryDto extends PaginationQueryDto {
   search?: string;
 
   @IsOptional()
-  @IsArray()
   @IsMongoId({ each: true })
   organization?: string[];
 }
