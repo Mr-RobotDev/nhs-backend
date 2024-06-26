@@ -28,7 +28,7 @@ export class BuildingController {
     return this.buildingService.createSite(site, createBuildingDto);
   }
 
-  @Get()
+  @Get('buildings')
   getSites(@Query() query?: GetBuildingsQueryDto) {
     return this.buildingService.getSites(query);
   }

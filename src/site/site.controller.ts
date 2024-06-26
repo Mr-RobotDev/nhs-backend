@@ -31,7 +31,7 @@ export class SiteController {
     return this.siteService.createSite(organization, createSiteDto);
   }
 
-  @Get()
+  @Get('sites')
   getSites(@Query() query?: GetSitesQueryDto) {
     return this.siteService.getSites(query);
   }

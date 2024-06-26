@@ -31,7 +31,7 @@ export class FloorController {
     return this.floorService.createFloor(building, createFloorDto);
   }
 
-  @Get()
+  @Get('floors')
   getFloors(@Query() query?: GetFloorsQueryDto) {
     return this.floorService.getFloors(query);
   }
