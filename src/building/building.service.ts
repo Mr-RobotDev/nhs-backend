@@ -5,7 +5,7 @@ import { CreateBuildingDto } from './dto/create-building.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
 import { GetBuildingsQueryDto } from './dto/get-buildings.dto';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
-import { Result } from 'src/common/interfaces/result.interface';
+import { Result } from '../common/interfaces/result.interface';
 
 @Injectable()
 export class BuildingService {
@@ -25,12 +25,13 @@ export class BuildingService {
     return building;
   }
 
-  async getSites(query?: GetBuildingsQueryDto): Promise<Result<Building>> {
+  async getBuildings(query?: GetBuildingsQueryDto): Promise<Result<Building>> {
     const { page, limit, search, site } = query;
+    const sites = Array.isArray(site) ? site : [site];
     return this.buildingModel.paginate(
       {
         ...(search && { name: { $regex: search, $options: 'i' } }),
-        ...(site && { site: { $in: site } }),
+        ...(sites.length && { site: { $in: sites } }),
       },
       {
         page,

@@ -30,7 +30,7 @@ export class BuildingController {
 
   @Get('buildings')
   getSites(@Query() query?: GetBuildingsQueryDto) {
-    return this.buildingService.getSites(query);
+    return this.buildingService.getBuildings(query);
   }
 
   @Patch('sites/:site/buildings/:building')

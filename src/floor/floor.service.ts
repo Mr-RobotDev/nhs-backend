@@ -27,10 +27,11 @@ export class FloorService {
 
   async getFloors(query?: GetFloorsQueryDto): Promise<Result<Floor>> {
     const { page, limit, search, building } = query;
+    const buildings = Array.isArray(building) ? building : [building];
     return this.floorModel.paginate(
       {
         ...(search && { name: { $regex: search, $options: 'i' } }),
-        ...(building && { building: { $in: building } }),
+        ...(buildings.length && { building: { $in: buildings } }),
       },
       {
         page,

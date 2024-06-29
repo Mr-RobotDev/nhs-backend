@@ -27,10 +27,13 @@ export class SiteService {
 
   async getSites(query?: GetSitesQueryDto): Promise<Result<Site>> {
     const { page, limit, search, organization } = query;
+    const organizations = Array.isArray(organization)
+      ? organization
+      : [organization];
     return this.siteModel.paginate(
       {
         ...(search && { name: { $regex: search, $options: 'i' } }),
-        ...(organization && { organization: { $in: organization } }),
+        ...(organizations.length && { organization: { $in: organizations } }),
       },
       {
         page,

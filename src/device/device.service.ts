@@ -105,13 +105,21 @@ export class DeviceService {
       page: Page.DEVICES,
     });
 
+    const organizations = Array.isArray(organization)
+      ? organization
+      : [organization];
+    const sites = Array.isArray(site) ? site : [site];
+    const buildings = Array.isArray(building) ? building : [building];
+    const floors = Array.isArray(floor) ? floor : [floor];
+    const rooms = Array.isArray(room) ? room : [room];
+
     return this.deviceModel.paginate(
       {
-        ...(organization && { organization: { $in: organization } }),
-        ...(site && { site: { $in: site } }),
-        ...(building && { building: { $in: building } }),
-        ...(floor && { floor: { $in: floor } }),
-        ...(room && { room: { $in: room } }),
+        ...(organization && { organization: { $in: organizations } }),
+        ...(site && { site: { $in: sites } }),
+        ...(building && { building: { $in: buildings } }),
+        ...(floor && { floor: { $in: floors } }),
+        ...(room && { room: { $in: rooms } }),
         ...(search && {
           $or: [{ oem: search }, { name: { $regex: search, $options: 'i' } }],
         }),

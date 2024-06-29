@@ -60,10 +60,11 @@ export class RoomService {
 
   async getRooms(query?: GetRoomsQueryDto): Promise<Result<Room>> {
     const { page, limit, search, floor } = query;
+    const floors = Array.isArray(floor) ? floor : [floor];
     return this.roomModel.paginate(
       {
         ...(search && { name: { $regex: search, $options: 'i' } }),
-        ...(floor && { floor: { $in: floor } }),
+        ...(floors.length && { floor: { $in: floors } }),
       },
       {
         page,
