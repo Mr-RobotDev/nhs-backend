@@ -11,7 +11,7 @@ import {
 import { OrganizationService } from './organization.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { GetOrganizationsQueryDto } from './dto/get-organizations.dto';
 import { IsObjectIdPipe } from '../common/pipes/objectid.pipe';
 
 @Controller({
@@ -27,8 +27,8 @@ export class OrganizationController {
   }
 
   @Get()
-  getOrganizations(@Query() paginationDto: PaginationQueryDto) {
-    return this.organizationService.getOrganizations(paginationDto);
+  getOrganizations(@Query() query: GetOrganizationsQueryDto) {
+    return this.organizationService.getOrganizations(query);
   }
 
   @Get(':organization')

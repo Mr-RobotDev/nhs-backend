@@ -4,7 +4,7 @@ import { Organization } from './schema/organization.schema';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { GetOrganizationsQueryDto } from './dto/get-organizations.dto';
 import { Result } from '../common/interfaces/result.interface';
 
 @Injectable()
@@ -21,11 +21,13 @@ export class OrganizationService {
   }
 
   getOrganizations(
-    paginationDto: PaginationQueryDto,
+    query: GetOrganizationsQueryDto,
   ): Promise<Result<Organization>> {
-    const { page, limit } = paginationDto;
+    const { page, limit, search } = query;
     return this.organizationModel.paginate(
-      {},
+      {
+        ...(search && { name: { $regex: search, $options: 'i' } }),
+      },
       { page, limit, projection: '-createdAt' },
     );
   }
