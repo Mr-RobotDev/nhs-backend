@@ -18,11 +18,10 @@ export class SiteService {
     organization: string,
     createSiteDto: CreateSiteDto,
   ): Promise<Site> {
-    const site = await this.siteModel.create({
+    return this.siteModel.create({
       ...createSiteDto,
       organization,
     });
-    return site;
   }
 
   async getSites(query?: GetSitesQueryDto): Promise<Result<Site>> {
@@ -30,10 +29,11 @@ export class SiteService {
     const organizations = Array.isArray(organization)
       ? organization
       : [organization];
+
     return this.siteModel.paginate(
       {
         ...(search && { name: { $regex: search, $options: 'i' } }),
-        ...(organizations.length && { organization: { $in: organizations } }),
+        ...(organization && { organization: { $in: organizations } }),
       },
       {
         page,

@@ -59,7 +59,6 @@ export class OrganizationService {
 
   async removeOrganization(id: string): Promise<Organization> {
     const organization = await this.organizationModel.findByIdAndDelete(id);
-
     if (!organization) {
       throw new NotFoundException(`Organization #${id} not found`);
     }
