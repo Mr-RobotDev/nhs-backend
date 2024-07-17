@@ -54,9 +54,20 @@ export class Alert extends Document {
 
   @Prop({
     type: Boolean,
+    default: false,
+  })
+  active: boolean;
+
+  @Prop({
+    type: Boolean,
     default: true,
   })
   enabled: boolean;
+
+  @Prop({
+    type: Date,
+  })
+  conditionStartTime?: Date;
 
   @Prop({
     type: Types.ObjectId,
@@ -67,8 +78,6 @@ export class Alert extends Document {
 }
 
 export const AlertSchema = SchemaFactory.createForClass(Alert);
-
-AlertSchema.index({ device: 1 }, { unique: true });
 
 AlertSchema.plugin(toJSON);
 AlertSchema.plugin(paginate);

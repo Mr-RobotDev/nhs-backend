@@ -1,11 +1,10 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { format } from 'date-fns';
 import { InjectModel } from '@nestjs/mongoose';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Alert } from './schema/alert.schema';
 import { Trigger } from './schema/trigger.schema';
+import { MailService } from '../common/services/mail.service';
 import { CreateAlertDto } from './dto/create-alert.dto';
 import { UpdateAlertDto } from './dto/update-alert.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
@@ -17,20 +16,48 @@ import { Result } from '../common/interfaces/result.interface';
 
 @Injectable()
 export class AlertService {
-  private conditionStartTimes = new Map<string, Date>();
-
   constructor(
     @InjectModel(Alert.name)
     private readonly alertModel: PaginatedModel<Alert>,
+    private readonly mailService: MailService,
   ) {}
 
-  async filterAlerts(device: string): Promise<Alert[]> {
+  @Cron(CronExpression.EVERY_MINUTE)
+  async sendActiveAlerts() {
+    const alerts = await this.alertModel.find({ active: true }).populate({
+      path: 'device',
+      select: 'name state updatedAt',
+    });
+
+    const alertPromises = alerts.map(async (alert) => {
+      const startTime = new Date(alert.conditionStartTime);
+      const now = new Date();
+      const duration = (now.getTime() - startTime.getTime()) / 1000 / 60;
+
+      if (duration >= alert.trigger.duration) {
+        await this.sendAlertEmail(alert);
+        await this.resetAlertCondition(alert.id);
+      }
+    });
+
+    await Promise.all(alertPromises);
+  }
+
+  async handleUpdateChange(change: any) {
+    const device = change.documentKey._id;
+    const state: DeviceState = change.updateDescription.updatedFields.state;
+    const alerts = await this.filterAlerts(device.toString());
+    const currentDay = format(new Date(), 'EEEE').toLowerCase() as WeekDay;
+    await this.processAlerts(alerts, state, currentDay);
+  }
+
+  private async filterAlerts(device: string): Promise<Alert[]> {
     return this.alertModel.find(
       {
         device,
         enabled: true,
       },
-      '-createdAt',
+      '-createdAt -conditionStartTime',
       {
         populate: {
           path: 'device',
@@ -40,32 +67,62 @@ export class AlertService {
     );
   }
 
-  shouldSendAlert(
+  private async processAlerts(
+    alerts: Alert[],
+    state: DeviceState,
+    currentDay: WeekDay,
+  ) {
+    const alertPromises = alerts.map(async (alert) => {
+      await this.activateAlert(alert, currentDay, state);
+    });
+    await Promise.all(alertPromises);
+  }
+
+  private async activateAlert(
     alert: Alert,
     currentDay: WeekDay,
     state: DeviceState,
-  ): boolean {
-    const alertKey = `${alert.id}-${state}`;
-
-    if (this.isScheduleMatched(alert, currentDay)) {
-      if (this.isConditionMet(alert.trigger, state)) {
-        if (!this.conditionStartTimes.has(alertKey)) {
-          this.conditionStartTimes.set(alertKey, new Date());
-        }
-
-        const startTime = this.conditionStartTimes.get(alertKey);
-        const now = new Date();
-        const duration = (now.getTime() - startTime.getTime()) / 1000 / 60;
-
-        if (duration >= alert.trigger.duration) {
-          this.conditionStartTimes.delete(alertKey);
-          return true;
-        }
-      } else {
-        this.conditionStartTimes.delete(alertKey);
+  ): Promise<void> {
+    if (
+      this.isScheduleMatched(alert, currentDay) &&
+      this.isConditionMet(alert.trigger, state)
+    ) {
+      if (alert.conditionStartTime === null) {
+        await this.setAlertCondition(alert.id);
+      }
+    } else {
+      if (alert.conditionStartTime) {
+        await this.resetAlertCondition(alert.id);
       }
     }
-    return false;
+  }
+
+  private async setAlertCondition(alert: string) {
+    await this.alertModel.findByIdAndUpdate(alert, {
+      conditionStartTime: new Date(),
+      active: true,
+    });
+  }
+
+  private async resetAlertCondition(alert: string) {
+    await this.alertModel.findByIdAndUpdate(alert, {
+      conditionStartTime: null,
+      active: false,
+    });
+  }
+
+  private async sendAlertEmail(alert: Alert) {
+    try {
+      const updated = format(alert.device.updatedAt, 'dd/MM/yyyy HH:mm:ss');
+      await this.mailService.sendDeviceAlert(
+        alert.recipients,
+        alert.device.name,
+        alert.device.state,
+        updated,
+      );
+    } catch (error) {
+      console.error('Failed to send alert email:', error);
+    }
   }
 
   private isScheduleMatched(alert: Alert, currentDay: WeekDay): boolean {
@@ -83,14 +140,8 @@ export class AlertService {
   }
 
   async createAlert(createAlertDto: CreateAlertDto): Promise<Alert> {
-    const alert = await this.alertModel.findOne({
-      device: createAlertDto.device,
-    });
-    if (alert) {
-      throw new BadRequestException('An alert already exists for this device');
-    }
-    const newAlert = await this.alertModel.create(createAlertDto);
-    return this.getAlert(newAlert.id);
+    const alert = await this.alertModel.create(createAlertDto);
+    return this.getAlert(alert.id);
   }
 
   async getAlerts(query: PaginationQueryDto): Promise<Result<Alert>> {
@@ -100,7 +151,7 @@ export class AlertService {
       {
         page,
         limit,
-        projection: '-createdAt',
+        projection: '-createdAt -conditionStartTime',
         populate: [
           {
             path: 'device',
@@ -112,12 +163,16 @@ export class AlertService {
   }
 
   async getAlert(id: string): Promise<Alert> {
-    const alert = await this.alertModel.findById(id, '-createdAt', {
-      populate: {
-        path: 'device',
-        select: 'name updatedAt state',
+    const alert = await this.alertModel.findById(
+      id,
+      '-createdAt1 -conditionStartTime',
+      {
+        populate: {
+          path: 'device',
+          select: 'name updatedAt state',
+        },
       },
-    });
+    );
     if (!alert) {
       throw new NotFoundException(`Alert #${id} not found`);
     }
@@ -133,7 +188,7 @@ export class AlertService {
       updateAlertDto,
       {
         new: true,
-        projection: '-createdAt',
+        projection: '-createdAt -conditionStartTime',
         populate: {
           path: 'device',
           select: 'name updatedAt state',
@@ -148,7 +203,7 @@ export class AlertService {
 
   async removeAlert(id: string): Promise<void> {
     const result = await this.alertModel.findByIdAndDelete(id, {
-      projection: '-createdAt',
+      projection: '-createdAt -conditionStartTime',
       populate: {
         path: 'device',
         select: 'name updatedAt state',
