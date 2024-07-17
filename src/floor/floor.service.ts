@@ -18,20 +18,25 @@ export class FloorService {
     building: string,
     createFloorDto: CreateFloorDto,
   ): Promise<Floor> {
-    const floor = await this.floorModel.create({
+    return this.floorModel.create({
       ...createFloorDto,
       building,
     });
-    return floor;
   }
 
   async getFloors(query?: GetFloorsQueryDto): Promise<Result<Floor>> {
     const { page, limit, search, building } = query;
     const buildings = Array.isArray(building) ? building : [building];
+
     return this.floorModel.paginate(
       {
-        ...(search && { name: { $regex: search, $options: 'i' } }),
-        ...(buildings.length && { building: { $in: buildings } }),
+        ...(search && {
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { code: { $regex: search, $options: 'i' } },
+          ],
+        }),
+        ...(building && { building: { $in: buildings } }),
       },
       {
         page,
@@ -61,13 +66,10 @@ export class FloorService {
   }
 
   async removeFloor(building: string, id: string): Promise<Floor> {
-    const floor = await this.floorModel.findOneAndDelete(
-      {
-        _id: id,
-        building,
-      },
-      { projection: '-building -createdAt' },
-    );
+    const floor = await this.floorModel.findOneAndDelete({
+      _id: id,
+      building,
+    });
     if (!floor) {
       throw new NotFoundException('Floor not found');
     }
