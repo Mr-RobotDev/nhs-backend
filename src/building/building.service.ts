@@ -18,20 +18,20 @@ export class BuildingService {
     site: string,
     createBuildingDto: CreateBuildingDto,
   ): Promise<Building> {
-    const building = await this.buildingModel.create({
+    return this.buildingModel.create({
       ...createBuildingDto,
       site,
     });
-    return building;
   }
 
   async getBuildings(query?: GetBuildingsQueryDto): Promise<Result<Building>> {
     const { page, limit, search, site } = query;
     const sites = Array.isArray(site) ? site : [site];
+
     return this.buildingModel.paginate(
       {
         ...(search && { name: { $regex: search, $options: 'i' } }),
-        ...(sites.length && { site: { $in: sites } }),
+        ...(site && { site: { $in: sites } }),
       },
       {
         page,
