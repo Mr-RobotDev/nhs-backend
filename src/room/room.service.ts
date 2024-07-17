@@ -51,20 +51,28 @@ export class RoomService {
   }
 
   async createRoom(floor: string, createRoomDto: CreateRoomDto): Promise<Room> {
-    const room = await this.roomModel.create({
+    return this.roomModel.create({
       ...createRoomDto,
       floor,
     });
-    return room;
   }
 
   async getRooms(query?: GetRoomsQueryDto): Promise<Result<Room>> {
     const { page, limit, search, floor } = query;
     const floors = Array.isArray(floor) ? floor : [floor];
+
     return this.roomModel.paginate(
       {
-        ...(search && { name: { $regex: search, $options: 'i' } }),
-        ...(floors.length && { floor: { $in: floors } }),
+        ...(search && {
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { function: { $regex: search, $options: 'i' } },
+            { department: { $regex: search, $options: 'i' } },
+            { division: { $regex: search, $options: 'i' } },
+            { cluster: { $regex: search, $options: 'i' } },
+          ],
+        }),
+        ...(floor && { floor: { $in: floors } }),
       },
       {
         page,
@@ -125,13 +133,10 @@ export class RoomService {
   }
 
   async removeRoom(floor: string, id: string): Promise<Room> {
-    const room = await this.roomModel.findOneAndDelete(
-      {
-        _id: id,
-        floor,
-      },
-      { projection: '-floor -createdAt' },
-    );
+    const room = await this.roomModel.findOneAndDelete({
+      _id: id,
+      floor,
+    });
     if (!room) {
       throw new NotFoundException('Room not found');
     }
