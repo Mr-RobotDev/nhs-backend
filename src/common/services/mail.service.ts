@@ -41,7 +41,7 @@ export class MailService {
   async sendDeviceAlert(
     emails: string[],
     device: string,
-    value: number,
+    value: string,
     datetime: string,
   ): Promise<boolean> {
     try {
