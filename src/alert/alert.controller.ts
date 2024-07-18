@@ -37,6 +37,11 @@ export class AlertController {
     return this.alertService.getAlerts(query);
   }
 
+  @Get('stats')
+  getAlertsStats() {
+    return this.alertService.getAlertsStats();
+  }
+
   @Get(':alert')
   getAlert(@Param('alert', IsObjectIdPipe) alert: string) {
     return this.alertService.getAlert(alert);

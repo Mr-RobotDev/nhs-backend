@@ -162,6 +162,19 @@ export class AlertService {
     );
   }
 
+  async getAlertsStats() {
+    const alerts = await this.alertModel.find({}).select('name active');
+
+    const activeAlerts = alerts.filter((alert) => alert.active);
+    const nonActiveAlerts = alerts.filter((alert) => !alert.active);
+
+    return {
+      totalActiveAlerts: activeAlerts.length,
+      totalNonActiveAlerts: nonActiveAlerts.length,
+      activeAlerts: activeAlerts.map((alert) => alert.name),
+    };
+  }
+
   async getAlert(id: string): Promise<Alert> {
     const alert = await this.alertModel.findById(
       id,
