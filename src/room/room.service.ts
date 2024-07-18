@@ -93,6 +93,9 @@ export class RoomService {
     red: number;
     yellow: number;
     green: number;
+    roomFunctions: { function: string; count: number }[];
+    departments: { department: string; count: number }[];
+    roomNames: string[];
   }> {
     const { search, floor, includeWeekends, from, to } = query;
     const floors = Array.isArray(floor) ? floor : [floor];
@@ -168,6 +171,10 @@ export class RoomService {
             { $group: { _id: '$department', count: { $sum: 1 } } },
             { $project: { department: '$_id', count: 1, _id: 0 } },
           ],
+          roomNames: [
+            { $group: { _id: null, names: { $push: '$name' } } },
+            { $project: { _id: 0, names: 1 } },
+          ],
         },
       },
       {
@@ -187,6 +194,9 @@ export class RoomService {
           green: { $ifNull: [{ $arrayElemAt: ['$green.count', 0] }, 0] },
           roomFunctions: 1,
           departments: 1,
+          roomNames: {
+            $ifNull: [{ $arrayElemAt: ['$roomNames.names', 0] }, []],
+          },
         },
       },
     ];
