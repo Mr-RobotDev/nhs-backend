@@ -160,6 +160,14 @@ export class RoomService {
             { $count: 'count' },
           ],
           green: [{ $match: { occupancy: { $gt: 80 } } }, { $count: 'count' }],
+          roomFunctions: [
+            { $group: { _id: '$function', count: { $sum: 1 } } },
+            { $project: { function: '$_id', count: 1, _id: 0 } },
+          ],
+          departments: [
+            { $group: { _id: '$department', count: { $sum: 1 } } },
+            { $project: { department: '$_id', count: 1, _id: 0 } },
+          ],
         },
       },
       {
@@ -177,6 +185,8 @@ export class RoomService {
           red: { $ifNull: [{ $arrayElemAt: ['$red.count', 0] }, 0] },
           yellow: { $ifNull: [{ $arrayElemAt: ['$yellow.count', 0] }, 0] },
           green: { $ifNull: [{ $arrayElemAt: ['$green.count', 0] }, 0] },
+          roomFunctions: 1,
+          departments: 1,
         },
       },
     ];
