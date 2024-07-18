@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
+import { FilterQuery, PipelineStage } from 'mongoose';
 import { Room } from './schema/room.schema';
 import { DeviceService } from '../device/device.service';
 import { EventService } from '../event/event.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { GetRoomsQueryDto } from './dto/get-rooms.dto';
+import { GetRoomStatsQueryDto } from './dto/get-room-stats.dto';
 import { GetEventsQueryDto } from '../event/dto/get-events.dto';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
 import { Result } from '../common/interfaces/result.interface';
@@ -61,37 +63,97 @@ export class RoomService {
     const { page, limit, search, floor } = query;
     const floors = Array.isArray(floor) ? floor : [floor];
 
-    return this.roomModel.paginate(
-      {
-        ...(search && {
-          $or: [
-            { name: { $regex: search, $options: 'i' } },
-            { function: { $regex: search, $options: 'i' } },
-            { department: { $regex: search, $options: 'i' } },
-            { division: { $regex: search, $options: 'i' } },
-            { cluster: { $regex: search, $options: 'i' } },
-          ],
-        }),
-        ...(floor && { floor: { $in: floors } }),
-      },
-      {
-        page,
-        limit,
-        projection: '-floor -createdAt',
-      },
-    );
+    const filters: FilterQuery<Room> = {};
+
+    if (search) {
+      filters.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { function: { $regex: search, $options: 'i' } },
+        { department: { $regex: search, $options: 'i' } },
+        { division: { $regex: search, $options: 'i' } },
+        { cluster: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (floor) {
+      filters.floor = { $in: floors };
+    }
+
+    return this.roomModel.paginate(filters, {
+      page,
+      limit,
+      projection: '-floor -createdAt',
+    });
   }
 
-  async roomStats(): Promise<{
+  async getRoomStats(query?: GetRoomStatsQueryDto): Promise<{
     totalRooms: number;
+    totalNetUseableArea: number;
+    maxOccupancy: number;
     red: number;
     yellow: number;
     green: number;
   }> {
-    const [stats] = await this.roomModel.aggregate([
+    const { search, floor, includeWeekends, from, to } = query;
+    const floors = Array.isArray(floor) ? floor : [floor];
+
+    const filters: FilterQuery<Room> = {};
+
+    if (search) {
+      filters.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { function: { $regex: search, $options: 'i' } },
+        { department: { $regex: search, $options: 'i' } },
+        { division: { $regex: search, $options: 'i' } },
+        { cluster: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (floor) {
+      filters.floor = { $in: floors };
+    }
+
+    if (from && to) {
+      const start = new Date(from);
+      const end = new Date(to);
+      end.setHours(23, 59, 59, 999);
+      filters.createdAt = { $gte: start, $lte: end };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    filters.createdAt = { ...filters.createdAt, $lt: today };
+
+    if (includeWeekends) {
+      const excludeWeekends = [
+        { $expr: { $eq: [{ $dayOfWeek: '$createdAt' }, 1] } },
+        { $expr: { $eq: [{ $dayOfWeek: '$createdAt' }, 7] } },
+      ];
+      if (!includeWeekends) {
+        filters.$nor = excludeWeekends;
+      }
+    }
+
+    const pipeline: PipelineStage[] = [
+      {
+        $match: filters,
+      },
       {
         $facet: {
           total: [{ $count: 'count' }],
+          totalNetUseableArea: [
+            {
+              $group: {
+                _id: null,
+                totalNetUseableArea: { $sum: '$netUseableArea' },
+              },
+            },
+          ],
+          maxOccupancy: [
+            { $group: { _id: null, max: { $max: '$occupancy' } } },
+          ],
           red: [{ $match: { occupancy: { $lte: 60 } } }, { $count: 'count' }],
           yellow: [
             { $match: { occupancy: { $gt: 60, $lte: 80 } } },
@@ -102,14 +164,24 @@ export class RoomService {
       },
       {
         $project: {
-          totalRooms: { $arrayElemAt: ['$total.count', 0] },
-          red: { $arrayElemAt: ['$red.count', 0] },
-          yellow: { $arrayElemAt: ['$yellow.count', 0] },
-          green: { $arrayElemAt: ['$green.count', 0] },
+          totalRooms: { $ifNull: [{ $arrayElemAt: ['$total.count', 0] }, 0] },
+          totalNetUseableArea: {
+            $ifNull: [
+              { $arrayElemAt: ['$totalNetUseableArea.totalNetUseableArea', 0] },
+              0,
+            ],
+          },
+          maxOccupancy: {
+            $ifNull: [{ $arrayElemAt: ['$maxOccupancy.max', 0] }, 0],
+          },
+          red: { $ifNull: [{ $arrayElemAt: ['$red.count', 0] }, 0] },
+          yellow: { $ifNull: [{ $arrayElemAt: ['$yellow.count', 0] }, 0] },
+          green: { $ifNull: [{ $arrayElemAt: ['$green.count', 0] }, 0] },
         },
       },
-    ]);
+    ];
 
+    const [stats] = await this.roomModel.aggregate(pipeline);
     return stats;
   }
 
