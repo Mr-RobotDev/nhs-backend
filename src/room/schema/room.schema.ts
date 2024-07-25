@@ -6,6 +6,9 @@ import {
   paginatedAggregation,
 } from '../../common/plugins/pagination.plugin';
 import { Floor } from '../../floor/schema/floor.schema';
+import { Organization } from 'src/organization/schema/organization.schema';
+import { Site } from 'src/site/schema/site.schema';
+import { Building } from 'src/building/schema/building.schema';
 
 @Schema({
   timestamps: true,
@@ -96,6 +99,30 @@ export class Room extends Document {
     default: 0,
   })
   occupancy: number;
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: Organization.name,
+    required: true,
+    index: true,
+  })
+  organization: Organization;
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: Site.name,
+    required: true,
+    index: true,
+  })
+  site: Site;
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: Building.name,
+    required: true,
+    trim: true,
+  })
+  building: Building;
 
   @Prop({
     type: Types.ObjectId,

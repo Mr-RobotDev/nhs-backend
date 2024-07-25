@@ -4,6 +4,7 @@ import {
   IsString,
   IsNumber,
   IsInt,
+  IsMongoId,
 } from 'class-validator';
 
 export class CreateRoomDto {
@@ -54,4 +55,16 @@ export class CreateRoomDto {
   @IsInt()
   @IsNotEmpty()
   hoursPerDay: number;
+
+  @IsMongoId()
+  @IsNotEmpty()
+  organization: string;
+
+  @IsMongoId()
+  @IsNotEmpty()
+  site: string;
+
+  @IsMongoId()
+  @IsNotEmpty()
+  building: string;
 }

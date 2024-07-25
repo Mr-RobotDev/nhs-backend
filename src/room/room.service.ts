@@ -10,6 +10,7 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { GetRoomsQueryDto } from './dto/get-rooms.dto';
 import { GetRoomStatsQueryDto } from './dto/get-room-stats.dto';
 import { GetEventsQueryDto } from '../event/dto/get-events.dto';
+import { RoomStats } from './interfaces/room-stats.interface';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
 import { Result } from '../common/interfaces/result.interface';
 
@@ -82,22 +83,26 @@ export class RoomService {
     return this.roomModel.paginate(filters, {
       page,
       limit,
-      projection: '-floor -createdAt',
+      projection: '-organization -site -building -floor -createdAt',
     });
   }
 
-  async getRoomStats(query?: GetRoomStatsQueryDto): Promise<{
-    totalRooms: number;
-    totalNetUseableArea: number;
-    maxOccupancy: number;
-    red: number;
-    yellow: number;
-    green: number;
-    roomFunctions: { function: string; count: number }[];
-    departments: { department: string; count: number }[];
-    roomNames: string[];
-  }> {
-    const { search, floor, includeWeekends, from, to } = query;
+  async getRoomStats(query?: GetRoomStatsQueryDto): Promise<RoomStats> {
+    const {
+      search,
+      organization,
+      site,
+      building,
+      floor,
+      includeWeekends,
+      from,
+      to,
+    } = query;
+    const organizations = Array.isArray(organization)
+      ? organization
+      : [organization];
+    const sites = Array.isArray(site) ? site : [site];
+    const buildings = Array.isArray(building) ? building : [building];
     const floors = Array.isArray(floor) ? floor : [floor];
 
     const filters: FilterQuery<Room> = {};
@@ -116,18 +121,24 @@ export class RoomService {
       filters.floor = { $in: floors };
     }
 
+    if (organization) {
+      filters.organization = { $in: organizations };
+    }
+
+    if (site) {
+      filters.site = { $in: sites };
+    }
+
+    if (building) {
+      filters.building = { $in: buildings };
+    }
+
     if (from && to) {
       const start = new Date(from);
       const end = new Date(to);
       end.setHours(23, 59, 59, 999);
       filters.createdAt = { $gte: start, $lte: end };
     }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    filters.createdAt = { ...filters.createdAt, $lt: today };
 
     if (includeWeekends) {
       const excludeWeekends = [
@@ -216,7 +227,10 @@ export class RoomService {
         floor,
       },
       updateRoomDto,
-      { new: true, projection: '-floor -createdAt' },
+      {
+        new: true,
+        projection: '-organization -site -building -floor -createdAt',
+      },
     );
     if (!room) {
       throw new NotFoundException('Room not found');
