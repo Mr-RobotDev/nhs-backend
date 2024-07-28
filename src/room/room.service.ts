@@ -169,22 +169,50 @@ export class RoomService {
             { $group: { _id: null, max: { $max: '$occupancy' } } },
           ],
           red: [{ $match: { occupancy: { $lte: 60 } } }, { $count: 'count' }],
-          yellow: [
+          amber: [
             { $match: { occupancy: { $gt: 60, $lte: 80 } } },
             { $count: 'count' },
           ],
           green: [{ $match: { occupancy: { $gt: 80 } } }, { $count: 'count' }],
           roomFunctions: [
             { $group: { _id: '$function', count: { $sum: 1 } } },
-            { $project: { function: '$_id', count: 1, _id: 0 } },
+            { $project: { name: '$_id', count: 1, _id: 0 } },
           ],
           departments: [
             { $group: { _id: '$department', count: { $sum: 1 } } },
-            { $project: { department: '$_id', count: 1, _id: 0 } },
+            { $project: { name: '$_id', count: 1, _id: 0 } },
           ],
-          roomNames: [
-            { $group: { _id: null, names: { $push: '$name' } } },
-            { $project: { _id: 0, names: 1 } },
+          rooms: [
+            {
+              $group: {
+                _id: { name: '$name', occupancy: '$occupancy' },
+                occupancy: { $first: '$occupancy' },
+              },
+            },
+            {
+              $project: {
+                name: '$_id.name',
+                occupancy: {
+                  $switch: {
+                    branches: [
+                      { case: { $lte: ['$_id.occupancy', 60] }, then: 'red' },
+                      {
+                        case: {
+                          $and: [
+                            { $gt: ['$_id.occupancy', 60] },
+                            { $lte: ['$_id.occupancy', 80] },
+                          ],
+                        },
+                        then: 'amber',
+                      },
+                      { case: { $gt: ['$_id.occupancy', 80] }, then: 'green' },
+                    ],
+                    default: 'unknown',
+                  },
+                },
+                _id: 0,
+              },
+            },
           ],
         },
       },
@@ -201,13 +229,11 @@ export class RoomService {
             $ifNull: [{ $arrayElemAt: ['$maxOccupancy.max', 0] }, 0],
           },
           red: { $ifNull: [{ $arrayElemAt: ['$red.count', 0] }, 0] },
-          yellow: { $ifNull: [{ $arrayElemAt: ['$yellow.count', 0] }, 0] },
+          amber: { $ifNull: [{ $arrayElemAt: ['$amber.count', 0] }, 0] },
           green: { $ifNull: [{ $arrayElemAt: ['$green.count', 0] }, 0] },
           roomFunctions: 1,
           departments: 1,
-          roomNames: {
-            $ifNull: [{ $arrayElemAt: ['$roomNames.names', 0] }, []],
-          },
+          rooms: 1,
         },
       },
     ];
