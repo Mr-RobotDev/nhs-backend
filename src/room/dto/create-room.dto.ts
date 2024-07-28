@@ -37,15 +37,15 @@ export class CreateRoomDto {
   subDepartment: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   division: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   cluster: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   clusterDescription: string;
 
   @IsString()

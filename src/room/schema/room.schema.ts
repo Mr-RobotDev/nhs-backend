@@ -6,9 +6,9 @@ import {
   paginatedAggregation,
 } from '../../common/plugins/pagination.plugin';
 import { Floor } from '../../floor/schema/floor.schema';
-import { Organization } from 'src/organization/schema/organization.schema';
-import { Site } from 'src/site/schema/site.schema';
-import { Building } from 'src/building/schema/building.schema';
+import { Organization } from '../../organization/schema/organization.schema';
+import { Site } from '../../site/schema/site.schema';
+import { Building } from '../../building/schema/building.schema';
 
 @Schema({
   timestamps: true,
@@ -62,21 +62,18 @@ export class Room extends Document {
 
   @Prop({
     type: String,
-    required: true,
     trim: true,
   })
   division: string;
 
   @Prop({
     type: String,
-    required: true,
     trim: true,
   })
   cluster: string;
 
   @Prop({
     type: String,
-    required: true,
     trim: true,
   })
   clusterDescription: string;
