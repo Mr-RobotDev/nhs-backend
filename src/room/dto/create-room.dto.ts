@@ -56,6 +56,14 @@ export class CreateRoomDto {
   @IsNotEmpty()
   hoursPerDay: number;
 
+  @IsInt()
+  @IsOptional()
+  maxDeskOccupation: number;
+
+  @IsInt()
+  @IsOptional()
+  numWorkstations: number;
+
   @IsMongoId()
   @IsNotEmpty()
   organization: string;

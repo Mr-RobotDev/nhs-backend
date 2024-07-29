@@ -98,6 +98,18 @@ export class Room extends Document {
   occupancy: number;
 
   @Prop({
+    type: Number,
+    default: 0,
+  })
+  maxDeskOccupation: number;
+
+  @Prop({
+    type: Number,
+    default: 0,
+  })
+  numWorkstations: number;
+
+  @Prop({
     type: Types.ObjectId,
     ref: Organization.name,
     required: true,
