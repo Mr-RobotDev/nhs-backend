@@ -13,6 +13,7 @@ import { GetEventsQueryDto } from '../event/dto/get-events.dto';
 import { RoomStats } from './interfaces/room-stats.interface';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
 import { Result } from '../common/interfaces/result.interface';
+import { GetRoomDataQueryDto } from './dto/get-room-data.dto';
 
 @Injectable()
 export class RoomService {
@@ -88,16 +89,7 @@ export class RoomService {
   }
 
   async getRoomStats(query?: GetRoomStatsQueryDto): Promise<RoomStats> {
-    const {
-      search,
-      organization,
-      site,
-      building,
-      floor,
-      includeWeekends,
-      from,
-      to,
-    } = query;
+    const { search, organization, site, building, floor } = query;
     const organizations = Array.isArray(organization)
       ? organization
       : [organization];
@@ -131,23 +123,6 @@ export class RoomService {
 
     if (building) {
       filters.building = { $in: buildings };
-    }
-
-    if (from && to) {
-      const start = new Date(from);
-      const end = new Date(to);
-      end.setHours(23, 59, 59, 999);
-      filters.createdAt = { $gte: start, $lte: end };
-    }
-
-    if (includeWeekends) {
-      const excludeWeekends = [
-        { $expr: { $eq: [{ $dayOfWeek: '$createdAt' }, 1] } },
-        { $expr: { $eq: [{ $dayOfWeek: '$createdAt' }, 7] } },
-      ];
-      if (!includeWeekends) {
-        filters.$nor = excludeWeekends;
-      }
     }
 
     const pipeline: PipelineStage[] = [
@@ -240,6 +215,79 @@ export class RoomService {
 
     const [stats] = await this.roomModel.aggregate(pipeline);
     return stats;
+  }
+
+  async getRoomData(query?: GetRoomDataQueryDto): Promise<any> {
+    const { organization, site, building, floor, includeWeekends, from, to } =
+      query;
+
+    const organizations = Array.isArray(organization)
+      ? organization
+      : [organization];
+    const sites = Array.isArray(site) ? site : [site];
+    const buildings = Array.isArray(building) ? building : [building];
+    const floors = Array.isArray(floor) ? floor : [floor];
+
+    const filters: FilterQuery<Room> = {};
+
+    if (floor) {
+      filters.floor = { $in: floors };
+    }
+
+    if (organization) {
+      filters.organization = { $in: organizations };
+    }
+
+    if (site) {
+      filters.site = { $in: sites };
+    }
+
+    if (building) {
+      filters.building = { $in: buildings };
+    }
+
+    const rooms = await this.roomModel.find(filters);
+    const totalNetUseableArea = rooms.reduce(
+      (acc, room) => acc + room.netUseableArea,
+      0,
+    );
+    const totalMaxUseableDesks = rooms.reduce(
+      (acc, room) => acc + room.maxDeskOccupation,
+      0,
+    );
+    const totalMaxUseableWorkstations = rooms.reduce(
+      (acc, room) => acc + room.numWorkstations,
+      0,
+    );
+
+    let totalOccupancy = 0;
+    const updatePromises = rooms.map(async (room) => {
+      const devices = await this.deviceService.getDevicesByRoom(room.id);
+
+      const query: GetEventsQueryDto = {
+        from,
+        to,
+        ...(includeWeekends && { includeWeekends: Boolean(includeWeekends) }),
+      };
+
+      for (const device of devices) {
+        const occupancy = await this.eventService.calculateOccupancy(
+          device.id,
+          query,
+          room.hoursPerDay,
+        );
+        totalOccupancy += occupancy;
+      }
+    });
+
+    await Promise.all(updatePromises);
+
+    return {
+      totalOccupancy,
+      totalNetUseableArea,
+      totalMaxUseableDesks,
+      totalMaxUseableWorkstations,
+    };
   }
 
   async updateRoom(

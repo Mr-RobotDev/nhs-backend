@@ -6,12 +6,12 @@ export class GetLogsQueryDto extends PaginationQueryDto {
   @IsDate()
   @ToDate()
   @IsNotEmpty()
-  from?: Date;
+  from: Date;
 
   @IsDate()
   @ToDate()
   @IsNotEmpty()
-  to?: Date;
+  to: Date;
 
   @IsOptional()
   @IsMongoId()

@@ -13,6 +13,7 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { GetRoomsQueryDto } from './dto/get-rooms.dto';
 import { GetRoomStatsQueryDto } from './dto/get-room-stats.dto';
+import { GetRoomDataQueryDto } from './dto/get-room-data.dto';
 import { IsObjectIdPipe } from '../common/pipes/objectid.pipe';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
@@ -40,6 +41,11 @@ export class RoomController {
   @Get('rooms/stats')
   getRoomStats(@Query() query?: GetRoomStatsQueryDto) {
     return this.roomService.getRoomStats(query);
+  }
+
+  @Get('rooms/data')
+  getRoomData(@Query() query?: GetRoomDataQueryDto) {
+    return this.roomService.getRoomData(query);
   }
 
   @Roles(Role.ADMIN)

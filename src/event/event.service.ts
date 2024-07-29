@@ -56,14 +56,25 @@ export class EventService {
   }
 
   async getEvents(device: string, query: GetEventsQueryDto): Promise<Event[]> {
-    const { from, to } = query;
+    const { from, to, includeWeekends } = query;
     const adjustedTo = new Date(to);
     adjustedTo.setHours(23, 59, 59, 999);
 
-    const filter: FilterQuery<Event> = {
+    let filter: FilterQuery<Event> = {
       device,
       createdAt: { $gte: from, $lte: adjustedTo },
     };
+
+    if (includeWeekends === false) {
+      filter = {
+        ...filter,
+        $expr: {
+          $not: {
+            $in: [{ $dayOfWeek: '$createdAt' }, [1, 7]],
+          },
+        },
+      };
+    }
 
     return this.eventModel.find(filter).sort({ createdAt: 1 });
   }

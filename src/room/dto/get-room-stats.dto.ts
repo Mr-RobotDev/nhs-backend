@@ -1,13 +1,10 @@
-import {
-  IsOptional,
-  IsBooleanString,
-  IsDate,
-  IsMongoId,
-} from 'class-validator';
+import { IsOptional, IsMongoId } from 'class-validator';
 import { GetRoomsQueryDto } from './get-rooms.dto';
-import { ToDate } from '../../common/transformers/to-date.transformer';
+import { OmitType } from '@nestjs/mapped-types';
 
-export class GetRoomStatsQueryDto extends GetRoomsQueryDto {
+export class GetRoomStatsQueryDto extends OmitType(GetRoomsQueryDto, [
+  'search',
+] as const) {
   @IsOptional()
   @IsMongoId({ each: true })
   organization?: string[];
@@ -19,18 +16,4 @@ export class GetRoomStatsQueryDto extends GetRoomsQueryDto {
   @IsOptional()
   @IsMongoId({ each: true })
   building?: string[];
-
-  @IsOptional()
-  @IsBooleanString()
-  includeWeekends?: boolean;
-
-  @IsOptional()
-  @IsDate()
-  @ToDate()
-  from?: Date;
-
-  @IsOptional()
-  @IsDate()
-  @ToDate()
-  to?: Date;
 }
