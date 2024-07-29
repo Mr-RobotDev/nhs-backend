@@ -65,7 +65,7 @@ export class EventService {
       createdAt: { $gte: from, $lte: adjustedTo },
     };
 
-    return this.eventModel.find(filter).sort({ createdAt: -1 });
+    return this.eventModel.find(filter).sort({ createdAt: 1 });
   }
 
   async processEvents(
