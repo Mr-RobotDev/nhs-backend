@@ -17,7 +17,7 @@ import { Folder } from '../common/enums/folder.enum';
 import { DeviceState } from '../device/enums/device-state.enum';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
 import { PartialUser } from '../user/types/partial-user.type';
-import { Interval } from './interfaces/interval.interface';
+import { MotionDetectedPerHour } from './interfaces/motion-per-hour.interface';
 
 @Injectable()
 export class EventService {
@@ -33,22 +33,14 @@ export class EventService {
     device: string,
     query: GetEventsQueryDto,
     openingHours: number,
-  ) {
-    const intervals = await this.processEvents(device, query);
-
-    let motionMinutes: number = 0;
-
-    for (const interval of intervals) {
-      if (interval.state === DeviceState.MOTION_DETECTED) {
-        const duration =
-          (new Date(interval.to).getTime() -
-            new Date(interval.from).getTime()) /
-          60000;
-        motionMinutes += duration;
-      }
-    }
-
-    return (motionMinutes / openingHours) * 100;
+  ): Promise<number> {
+    const motionDetectedPerHour = await this.processEvents(device, query);
+    let totalMotionMinutes = 0;
+    motionDetectedPerHour.forEach((entry) => {
+      totalMotionMinutes += entry.minutes;
+    });
+    const totalOpeningMinutes = openingHours * 60;
+    return (totalMotionMinutes / totalOpeningMinutes) * 100;
   }
 
   createEvent(createEventDto: CreateEventDto): Promise<Event> {
@@ -82,35 +74,53 @@ export class EventService {
   async processEvents(
     device: string,
     query: GetEventsQueryDto,
-  ): Promise<Interval[]> {
+  ): Promise<MotionDetectedPerHour[]> {
     const events = await this.getEvents(device, query);
 
-    const intervals: Interval[] = [];
-    let currentInterval = null;
+    const motionDetectedPerHour: Map<string, number> = new Map();
+
+    let previousEvent: Event | null = null;
 
     events.forEach((event) => {
-      if (!currentInterval) {
-        currentInterval = {
-          state: event.state,
-          from: event.createdAt,
-        };
-      } else if (currentInterval.state !== event.state) {
-        currentInterval.to = event.createdAt;
-        intervals.push(currentInterval);
+      if (
+        previousEvent &&
+        previousEvent.state === DeviceState.MOTION_DETECTED
+      ) {
+        let start = new Date(previousEvent.createdAt);
+        const end = new Date(event.createdAt);
 
-        currentInterval = {
-          state: event.state,
-          from: event.createdAt,
-        };
+        while (start < end) {
+          const hourKey = start.toISOString().slice(0, 13);
+          const nextHour = new Date(start);
+          nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
+
+          const minutesInThisHour = Math.min(
+            (nextHour.getTime() - start.getTime()) / 60000,
+            (end.getTime() - start.getTime()) / 60000,
+          );
+
+          if (!motionDetectedPerHour.has(hourKey)) {
+            motionDetectedPerHour.set(hourKey, 0);
+          }
+
+          motionDetectedPerHour.set(
+            hourKey,
+            motionDetectedPerHour.get(hourKey)! + minutesInThisHour,
+          );
+
+          start = nextHour;
+        }
       }
+
+      previousEvent = event;
     });
 
-    if (currentInterval) {
-      currentInterval.to = new Date();
-      intervals.push(currentInterval);
-    }
-
-    return intervals;
+    return Array.from(motionDetectedPerHour.entries()).map(
+      ([hour, minutes]) => ({
+        hour,
+        minutes: Math.round(minutes),
+      }),
+    );
   }
 
   async getFilePath(
