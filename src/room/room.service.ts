@@ -89,7 +89,7 @@ export class RoomService {
   }
 
   async getRoomStats(query?: GetRoomStatsQueryDto): Promise<RoomStats> {
-    const { search, organization, site, building, floor } = query;
+    const { organization, site, building, floor } = query;
     const organizations = Array.isArray(organization)
       ? organization
       : [organization];
@@ -98,16 +98,6 @@ export class RoomService {
     const floors = Array.isArray(floor) ? floor : [floor];
 
     const filters: FilterQuery<Room> = {};
-
-    if (search) {
-      filters.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { function: { $regex: search, $options: 'i' } },
-        { department: { $regex: search, $options: 'i' } },
-        { division: { $regex: search, $options: 'i' } },
-        { cluster: { $regex: search, $options: 'i' } },
-      ];
-    }
 
     if (floor) {
       filters.floor = { $in: floors };
