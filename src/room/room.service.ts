@@ -347,7 +347,7 @@ export class RoomService {
       this.roomModel.countDocuments(filters).exec(),
     ]);
 
-    const data = await Promise.all(
+    const results = await Promise.all(
       rooms.map(async (room) => {
         const devices = await this.deviceService.getDevicesByRoom(room.id);
 
@@ -384,7 +384,7 @@ export class RoomService {
     );
 
     return {
-      data,
+      results,
       pagination: {
         page,
         limit,
