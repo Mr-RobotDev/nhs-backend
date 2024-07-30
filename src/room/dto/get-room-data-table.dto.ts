@@ -9,10 +9,8 @@ import { GetRoomsQueryDto } from './get-rooms.dto';
 import { ToDate } from '../../common/transformers/to-date.transformer';
 import { OmitType } from '@nestjs/mapped-types';
 
-export class GetRoomDataQueryDto extends OmitType(GetRoomsQueryDto, [
+export class GetRoomDataTableQueryDto extends OmitType(GetRoomsQueryDto, [
   'search',
-  'page',
-  'limit',
 ] as const) {
   @IsOptional()
   @IsMongoId({ each: true })

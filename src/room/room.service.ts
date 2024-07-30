@@ -10,6 +10,7 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { GetRoomsQueryDto } from './dto/get-rooms.dto';
 import { GetRoomStatsQueryDto } from './dto/get-room-stats.dto';
 import { GetEventsQueryDto } from '../event/dto/get-events.dto';
+import { GetRoomDataTableQueryDto } from './dto/get-room-data-table.dto';
 import { RoomStats } from './interfaces/room-stats.interface';
 import { PaginatedModel } from '../common/interfaces/paginated-model.interface';
 import { Result } from '../common/interfaces/result.interface';
@@ -277,6 +278,119 @@ export class RoomService {
       totalNetUseableArea,
       totalMaxUseableDesks,
       totalMaxUseableWorkstations,
+    };
+  }
+
+  async getRoomDataTable(query?: GetRoomDataTableQueryDto) {
+    const {
+      organization,
+      site,
+      building,
+      floor,
+      includeWeekends,
+      from,
+      to,
+      page = 1,
+      limit = 10,
+    } = query;
+
+    const organizations = Array.isArray(organization)
+      ? organization
+      : [organization];
+    const sites = Array.isArray(site) ? site : [site];
+    const buildings = Array.isArray(building) ? building : [building];
+    const floors = Array.isArray(floor) ? floor : [floor];
+
+    const filters: FilterQuery<Room> = {};
+
+    if (floor) {
+      filters.floor = { $in: floors };
+    }
+
+    if (organization) {
+      filters.organization = { $in: organizations };
+    }
+
+    if (site) {
+      filters.site = { $in: sites };
+    }
+
+    if (building) {
+      filters.building = { $in: buildings };
+    }
+
+    const [rooms, totalResults] = await Promise.all([
+      this.roomModel
+        .find(filters)
+        .select(
+          'netUseableArea department clusterDescription maxDeskOccupation numWorkstations hoursPerDay organization site building floor',
+        )
+        .populate({
+          path: 'organization',
+          select: 'name',
+        })
+        .populate({
+          path: 'site',
+          select: 'name',
+        })
+        .populate({
+          path: 'building',
+          select: 'name',
+        })
+        .populate({
+          path: 'floor',
+          select: 'name code',
+        })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec(),
+      this.roomModel.countDocuments(filters).exec(),
+    ]);
+
+    const data = await Promise.all(
+      rooms.map(async (room) => {
+        const devices = await this.deviceService.getDevicesByRoom(room.id);
+
+        const query: GetEventsQueryDto = {
+          from,
+          to,
+          ...(includeWeekends && { includeWeekends: Boolean(includeWeekends) }),
+        };
+
+        let roomOccupancy = 0;
+        const occupancyPromises = devices.map(async (device) => {
+          const occupancy = await this.eventService.calculateOccupancy(
+            device.id,
+            query,
+            room.hoursPerDay,
+          );
+          roomOccupancy += occupancy;
+        });
+
+        await Promise.all(occupancyPromises);
+
+        return {
+          organization: room.organization.name,
+          site: room.site.name,
+          building: room.building.name,
+          code: room.floor.code,
+          floor: room.floor.name,
+          netUseableArea: room.netUseableArea,
+          maxDeskOccupation: room.maxDeskOccupation,
+          numWorkstations: room.numWorkstations,
+          occupancy: roomOccupancy,
+        };
+      }),
+    );
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        totalPages: Math.ceil(totalResults / limit),
+        totalResults,
+      },
     };
   }
 
