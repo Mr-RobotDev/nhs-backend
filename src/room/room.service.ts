@@ -274,7 +274,7 @@ export class RoomService {
     await Promise.all(updatePromises);
 
     return {
-      totalOccupancy,
+      totalOccupancy: totalOccupancy / rooms.length,
       totalNetUseableArea,
       totalMaxUseableDesks,
       totalMaxUseableWorkstations,
@@ -357,17 +357,19 @@ export class RoomService {
           ...(includeWeekends && { includeWeekends: Boolean(includeWeekends) }),
         };
 
-        let roomOccupancy = 0;
+        let totalOccupany = 0;
         const occupancyPromises = devices.map(async (device) => {
           const occupancy = await this.eventService.calculateOccupancy(
             device.id,
             query,
             room.hoursPerDay,
           );
-          roomOccupancy += occupancy;
+          totalOccupany += occupancy;
         });
 
         await Promise.all(occupancyPromises);
+
+        const roomOccupancy = totalOccupany / devices.length;
 
         return {
           organization: room.organization.name,
