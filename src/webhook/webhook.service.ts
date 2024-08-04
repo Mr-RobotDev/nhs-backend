@@ -67,6 +67,10 @@ export class WebhookService {
       state,
     });
 
+    if (!device) {
+      return;
+    }
+
     await this.eventService.createEvent({
       device: device.id,
       state,
@@ -78,9 +82,13 @@ export class WebhookService {
     const signalStrength: number =
       payload.event.data.networkStatus.signalStrength;
 
-    await this.deviceService.updateDeviceByOem(oem, {
+    const device = await this.deviceService.updateDeviceByOem(oem, {
       signalStrength,
     });
+
+    if (!device) {
+      return;
+    }
   }
 
   private async handleConnectionStatusEvent(payload: any): Promise<void> {
@@ -90,8 +98,12 @@ export class WebhookService {
         ? true
         : false;
 
-    await this.deviceService.updateDeviceByOem(oem, {
+    const device = await this.deviceService.updateDeviceByOem(oem, {
       isOffline,
     });
+
+    if (!device) {
+      return;
+    }
   }
 }
