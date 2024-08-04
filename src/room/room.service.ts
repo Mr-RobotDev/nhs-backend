@@ -275,8 +275,11 @@ export class RoomService {
 
     const difference = this.calculateDateDifference(from, to, includeWeekends);
 
+    totalOccupancy =
+      rooms.length > 0 ? totalOccupancy / rooms.length / difference : 0;
+
     return {
-      totalOccupancy: totalOccupancy / rooms.length / difference,
+      totalOccupancy,
       totalNetUseableArea,
       totalMaxUseableDesks,
       totalMaxUseableWorkstations,
@@ -376,7 +379,8 @@ export class RoomService {
           to,
           includeWeekends,
         );
-        const roomOccupancy = totalOccupancy / devices.length / difference;
+        const roomOccupancy =
+          devices.length > 0 ? totalOccupancy / devices.length / difference : 0;
 
         return {
           organization: room.organization.name,
