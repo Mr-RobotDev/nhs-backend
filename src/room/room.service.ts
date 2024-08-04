@@ -273,8 +273,10 @@ export class RoomService {
 
     await Promise.all(updatePromises);
 
+    const difference = this.calculateDateDifference(from, to, includeWeekends);
+
     return {
-      totalOccupancy: totalOccupancy / rooms.length,
+      totalOccupancy: totalOccupancy / rooms.length / difference,
       totalNetUseableArea,
       totalMaxUseableDesks,
       totalMaxUseableWorkstations,
@@ -357,19 +359,24 @@ export class RoomService {
           ...(includeWeekends && { includeWeekends: Boolean(includeWeekends) }),
         };
 
-        let totalOccupany = 0;
+        let totalOccupancy = 0;
         const occupancyPromises = devices.map(async (device) => {
           const occupancy = await this.eventService.calculateOccupancy(
             device.id,
             query,
             room.hoursPerDay,
           );
-          totalOccupany += occupancy;
+          totalOccupancy += occupancy;
         });
 
         await Promise.all(occupancyPromises);
 
-        const roomOccupancy = totalOccupany / devices.length;
+        const difference = this.calculateDateDifference(
+          from,
+          to,
+          includeWeekends,
+        );
+        const roomOccupancy = totalOccupancy / devices.length / difference;
 
         return {
           organization: room.organization.name,
@@ -427,5 +434,27 @@ export class RoomService {
       throw new NotFoundException('Room not found');
     }
     return room;
+  }
+
+  private calculateDateDifference(
+    from: Date,
+    to: Date,
+    includeWeekends?: boolean,
+  ): number {
+    const oneDay = 1000 * 60 * 60 * 24;
+    let difference = (to.getTime() - from.getTime()) / oneDay;
+
+    if (includeWeekends === false) {
+      const currentDate = new Date(from);
+      while (currentDate <= to) {
+        const day = currentDate.getDay();
+        if (day === 0 || day === 6) {
+          difference--;
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+
+    return difference;
   }
 }
