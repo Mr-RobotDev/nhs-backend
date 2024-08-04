@@ -14,10 +14,9 @@ import {
 export class Card extends Document {
   @Prop({
     type: String,
-    required: true,
     trim: true,
   })
-  name: string;
+  name?: string;
 
   @Prop({
     type: Number,

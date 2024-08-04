@@ -50,7 +50,7 @@ export class CardService {
       {
         populate: {
           path: 'devices',
-          select: 'name state',
+          select: 'name state updatedAt',
         },
       },
     );
@@ -66,7 +66,7 @@ export class CardService {
       {
         populate: {
           path: 'devices',
-          select: 'name state',
+          select: 'name state updatedAt',
         },
       },
     );
@@ -92,7 +92,7 @@ export class CardService {
         projection: '-createdAt -dashboard',
         populate: {
           path: 'devices',
-          select: 'name state',
+          select: 'name state updatedAt',
         },
       },
     );
